@@ -1,22 +1,18 @@
 // Uncomment the code below and write your tests
+import lodash from 'lodash';
+
 import {
   getBankAccount,
   InsufficientFundsError,
   SynchronizationFailedError,
   TransferFailedError,
 } from '.';
-import { random } from 'lodash';
-
-jest.mock('lodash', () => ({
-  random: jest.fn(),
-}));
 
 describe('BankAccount', () => {
   let bankAccount = getBankAccount(100);
 
   beforeEach(() => {
     bankAccount = getBankAccount(100);
-    jest.clearAllMocks();
   });
 
   test('should create account with initial balance', () => {
@@ -59,28 +55,36 @@ describe('BankAccount', () => {
   });
 
   test('fetchBalance should return number in case if request did not failed', async () => {
-    (random as jest.Mock).mockImplementationOnce(() => 100);
-    (random as jest.Mock).mockImplementationOnce(() => 1);
+    const spy = jest
+      .spyOn(lodash, 'random')
+      .mockImplementationOnce(() => 100)
+      .mockImplementationOnce(() => 1);
 
     const result = await bankAccount.fetchBalance();
-    expect(typeof result).toBe('number');
     expect(result).toBe(100);
+
+    spy.mockRestore();
   });
 
   test('should set new balance if fetchBalance returned number', async () => {
-    (random as jest.Mock).mockImplementationOnce(() => 100);
-    (random as jest.Mock).mockImplementationOnce(() => 1);
-
+    const spy = jest
+      .spyOn(bankAccount, 'fetchBalance')
+      .mockReturnValueOnce(Promise.resolve(100));
     await bankAccount.synchronizeBalance();
     expect(bankAccount.getBalance()).toBe(100);
+
+    spy.mockRestore();
   });
 
   test('should throw SynchronizationFailedError if fetchBalance returned null', async () => {
-    (random as jest.Mock).mockImplementationOnce(() => 0);
-    (random as jest.Mock).mockImplementationOnce(() => 0);
+    const spy = jest
+      .spyOn(bankAccount, 'fetchBalance')
+      .mockReturnValueOnce(Promise.resolve(null));
 
     await expect(bankAccount.synchronizeBalance()).rejects.toThrow(
       SynchronizationFailedError,
     );
+
+    spy.mockRestore();
   });
 });
