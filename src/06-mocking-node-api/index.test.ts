@@ -1,8 +1,5 @@
 // Uncomment the code below and write your tests
 import { readFileAsynchronously, doStuffByTimeout, doStuffByInterval } from '.';
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -81,34 +78,36 @@ describe('doStuffByInterval', () => {
 });
 
 describe('readFileAsynchronously', () => {
-  const existsSyncMock = existsSync as jest.MockedFunction<typeof existsSync>;
-  const readFileMock = readFile as jest.MockedFunction<typeof readFile>;
-  const joinMock = join as jest.MockedFunction<typeof join>;
+  const { existsSync } = jest.requireMock('fs') as { existsSync: jest.Mock };
+  const { readFile } = jest.requireMock('fs/promises') as {
+    readFile: jest.Mock;
+  };
+  const { join } = jest.requireMock('path') as { join: jest.Mock };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('should call join with pathToFile', async () => {
-    joinMock.mockReturnValue('/fake/fullPath');
+    join.mockReturnValue('/fake/fullPath');
 
     await readFileAsynchronously('test.txt');
 
-    expect(joinMock).toHaveBeenCalledWith(__dirname, 'test.txt');
+    expect(join).toHaveBeenCalledWith(__dirname, 'test.txt');
   });
 
   test('should return null if file does not exist', async () => {
-    joinMock.mockReturnValue('/fake/fullPath');
-    existsSyncMock.mockReturnValue(false);
+    join.mockReturnValue('/fake/fullPath');
+    existsSync.mockReturnValue(false);
 
     const result = await readFileAsynchronously('test.txt');
     expect(result).toBeNull();
   });
 
   test('should return file content if file exists', async () => {
-    joinMock.mockReturnValue('/fake/fullPath');
-    existsSyncMock.mockReturnValue(true);
-    readFileMock.mockResolvedValue(Buffer.from('test'));
+    join.mockReturnValue('/fake/fullPath');
+    existsSync.mockReturnValue(true);
+    readFile.mockResolvedValue(Buffer.from('test'));
 
     const result = await readFileAsynchronously('test.txt');
     expect(result).toBe('test');
